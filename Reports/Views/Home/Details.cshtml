@@ -1,24 +1,33 @@
-﻿@model System.Data.DataTable;
-@using System.Data;
+﻿@model IEnumerable<Reports.Models.Param>
 
-<table class="table table-hover">
-    <thead>
+@{
+    ViewData["Title"] = "Query Parameters";
+}
+
+@using (@Html.BeginForm("Export", "Home", FormMethod.Post))
+{
+<input type="hidden" name="itemId" value="@ViewBag.queryId" />
+<table class="table">
+    <thead class="thead-dark">
         <tr>
-            @foreach (DataColumn col in Model.Columns)
-            {
-                <th>@col.ColumnName</th>
-            }
+            <th scope="col">Field Type</th>
+            <th scope="col">Identifier</th>
+            <th scope="col">Value</th>
         </tr>
     </thead>
     <tbody>
-        @foreach (DataRow row in Model.Rows)
-        {
-            <tr>
-                @foreach (DataColumn col in Model.Columns)
-                {
-                    <td>@row[col.ColumnName]</td>
-                }
-            </tr>
-        }
+        @foreach (var item in Model)
+            {
+        <tr>
+            <td>@Html.DisplayFor(modelItem => item.type)</td>
+            <td>@Html.DisplayFor(modelItem => item.value)</td>
+            <td>
+                <input type="@item.type" name="@item.value" value="@item.defaults" />
+            </td>
+        </tr>
+            }
     </tbody>
 </table>
+<hr />
+<button type="submit" class="btn btn-primary">Submit</button>
+}
