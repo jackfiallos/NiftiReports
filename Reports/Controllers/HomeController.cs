@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -46,28 +47,8 @@ namespace Reports.Controllers
                     children = _context.Items.Where(o => o.parentId == l.id).Count()
                 })
                 .ToListAsync();
+
             return View("Index", items);
-        }
-
-        public IActionResult Export()
-        {
-            var connection = _mainContext.Database.GetDbConnection();
-            var command = connection.CreateCommand();
-            command.CommandText = "SELECT * FROM cars WHERE CAST(created_at AS DATE) = @P0";
-
-            SqlParameter param = new SqlParameter();
-            param.ParameterName = "@P0";
-            param.Value = "2021-08-29";
-
-            command.Parameters.Add(param);
-            connection.Open();
-            var dataReader = command.ExecuteReader();
-
-            var dataTable = new DataTable();
-            dataTable.Load(dataReader);
-
-            MemoryStream stream = ToCSV(dataTable);
-            return File(stream.ToArray(), "text/csv", "data.csv");
         }
 
         /**
@@ -79,20 +60,42 @@ namespace Reports.Controllers
                 .Where(m => m.itemId == id)
                 .Select(l => new Param()
                 {
-                    name = l.name,
-                    value = l.value
+                    type = l.type,
+                    value = l.value,
+                    defaults = l.defaults
                 })
                 .ToListAsync();
+            
+            // in case id query param does not exists, we will use 0 as default
+            ViewBag.queryId = !String.IsNullOrEmpty(id) ? id : "0";
 
-            return View("Index", items);
+            return View("Details", items);
         }
 
-        /**
-         * 
-         **/
-        public IActionResult Privacy()
+        [HttpPost]
+        public IActionResult Export(IFormCollection form)
         {
-            return View();
+            var connection = _mainContext.Database.GetDbConnection();
+            var command = connection.CreateCommand();
+            command.CommandText = "SELECT * FROM cars WHERE CAST(created_at AS DATE) = @P0";
+
+            foreach (var item in form)
+            {
+                SqlParameter param = new SqlParameter();
+                param.ParameterName = item.Key;
+                param.Value = item.Value[0].ToString();
+
+                command.Parameters.Add(param);
+            }
+
+            connection.Open();
+            var dataReader = command.ExecuteReader();
+
+            var dataTable = new DataTable();
+            dataTable.Load(dataReader);
+
+            MemoryStream stream = ToCSV(dataTable);
+            return File(stream.ToArray(), "text/csv", "data.csv");
         }
 
         /**

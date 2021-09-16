@@ -11,9 +11,11 @@ namespace Reports.Models
 
         [Required]
         [StringLength(50)]
-        public string name { get; set; }
+        public string type { get; set; }
 
         public string value { get; set; }
+
+        public string defaults { get; set; }
 
         public string itemId { get; set; }
     }
