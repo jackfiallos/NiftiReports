@@ -10,6 +10,7 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Dynamic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -48,14 +49,11 @@ namespace Reports.Controllers
             return View("Index", items);
         }
 
-        /**
-         * 
-         **/
-        public IActionResult Details()
+        public IActionResult Export()
         {
             var connection = _mainContext.Database.GetDbConnection();
             var command = connection.CreateCommand();
-                command.CommandText = "SELECT * FROM cars WHERE CAST(created_at AS DATE) = @P0";
+            command.CommandText = "SELECT * FROM cars WHERE CAST(created_at AS DATE) = @P0";
 
             SqlParameter param = new SqlParameter();
             param.ParameterName = "@P0";
@@ -68,19 +66,25 @@ namespace Reports.Controllers
             var dataTable = new DataTable();
             dataTable.Load(dataReader);
 
-            var result = new List<dynamic>();
-            foreach (DataRow row in dataTable.Rows)
-            {
-                var obj = (IDictionary<string, object>)new ExpandoObject();
-                foreach (DataColumn col in dataTable.Columns)
-                {
-                    obj.Add(col.ColumnName, row[col.ColumnName]);
-                }
-                result.Add(obj);
-            }
-            connection.Close();
+            MemoryStream stream = ToCSV(dataTable);
+            return File(stream.ToArray(), "text/csv", "data.csv");
+        }
 
-            return View(dataTable);
+        /**
+         * 
+         **/
+        public async Task<IActionResult> Details(string id)
+        {
+            List<Param> items = await _context.Params
+                .Where(m => m.itemId == id)
+                .Select(l => new Param()
+                {
+                    name = l.name,
+                    value = l.value
+                })
+                .ToListAsync();
+
+            return View("Index", items);
         }
 
         /**
@@ -98,6 +102,56 @@ namespace Reports.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        public static MemoryStream ToCSV(DataTable dtDataTable)
+        {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                StreamWriter objstreamwriter = new StreamWriter(stream);
+
+                //headers  
+                for (int i = 0; i < dtDataTable.Columns.Count; i++)
+                {
+                    objstreamwriter.Write(dtDataTable.Columns[i]);
+                    if (i < dtDataTable.Columns.Count - 1)
+                    {
+                        objstreamwriter.Write(",");
+                    }
+                }
+                objstreamwriter.Write(objstreamwriter.NewLine);
+                //rows
+                foreach (DataRow dr in dtDataTable.Rows)
+                {
+                    for (int i = 0; i < dtDataTable.Columns.Count; i++)
+                    {
+                        if (!Convert.IsDBNull(dr[i]))
+                        {
+                            string value = dr[i].ToString();
+                            if (value.Contains(','))
+                            {
+                                value = String.Format("\"{0}\"", value);
+                                objstreamwriter.Write(value);
+                            }
+                            else
+                            {
+                                objstreamwriter.Write(dr[i].ToString());
+                            }
+                        }
+                        if (i < dtDataTable.Columns.Count - 1)
+                        {
+                            objstreamwriter.Write(",");
+                        }
+                    }
+                    objstreamwriter.Write(objstreamwriter.NewLine);
+                }
+
+                objstreamwriter.Flush();
+                objstreamwriter.Close();
+
+                return stream;
+            }
+
         }
     }
 }

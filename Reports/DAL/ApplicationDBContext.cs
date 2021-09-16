@@ -13,6 +13,7 @@ namespace Reports.DAL
     public class ApplicationDBContext : DbContext
     {
         public DbSet<Item> Items { get; set; }
+        public DbSet<Param> Params { get; set; }
 
         public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : base(options)
         {
