@@ -1,0 +1,26 @@
+﻿@model IEnumerable<Reports.Models.Item>
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<ul>
+    @foreach (var item in Model)
+    {
+    <li class="collection-item">
+        @if (item.children > 0)
+        {
+            <a asp-route-id="@item.id">
+                @Html.DisplayFor(modelItem => item.name) >>
+            </a>
+        }
+        else
+        {
+            <a asp-action="Details" asp-route-id="@item.id">
+                @Html.DisplayFor(modelItem => item.name)
+            </a>
+        }
+        
+    </li>
+    }
+</ul>
