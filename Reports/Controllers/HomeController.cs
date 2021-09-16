@@ -54,6 +54,7 @@ namespace Reports.Controllers
          **/
         public async Task<IActionResult> Details(string id)
         {
+            // build the params for input fields
             List<Param> items = await _context.Params
                 .Where(m => m.itemId == id)
                 .Select(l => new Param()
@@ -76,16 +77,26 @@ namespace Reports.Controllers
         [HttpPost]
         public IActionResult Export(IFormCollection form)
         {
+            // get the query from sqlite
+            Item result = _context.Items
+                 .Where(m => m.id == form["itemId"].ToString())
+                 .Select(l => new Item()
+                 {
+                     query = l.query
+                 })
+                 .FirstOrDefault();
+
+            // from external db, create a conection and execute the query given from sqlite
             var connection = _mainContext.Database.GetDbConnection();
             var command = connection.CreateCommand();
-            command.CommandText = "SELECT * FROM cars WHERE CAST(created_at AS DATE) = @P0";
+            command.CommandText = result.query.ToString();
 
+            // map parameters from inputs
             foreach (var item in form)
             {
                 SqlParameter param = new SqlParameter();
                 param.ParameterName = item.Key;
                 param.Value = item.Value[0].ToString();
-
                 command.Parameters.Add(param);
             }
 
