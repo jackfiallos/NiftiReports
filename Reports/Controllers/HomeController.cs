@@ -8,9 +8,7 @@ using Reports.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Diagnostics;
-using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -72,6 +70,9 @@ namespace Reports.Controllers
             return View("Details", items);
         }
 
+        /**
+         * 
+         **/
         [HttpPost]
         public IActionResult Export(IFormCollection form)
         {
